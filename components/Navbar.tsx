@@ -33,16 +33,6 @@ export default function Navbar() {
               Tentang Kami
             </a>
           </div>
-
-          {/* CTA Button */}
-          <div>
-            <button
-              id="btn-nav-login"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
-            >
-              Masuk / Daftar
-            </button>
-          </div>
         </div>
       </div>
     </nav>

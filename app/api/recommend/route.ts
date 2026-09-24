@@ -30,11 +30,11 @@ export interface ScholarshipResult {
 export async function POST(req: NextRequest) {
   // 1. Validate API key exists
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  if (!apiKey || apiKey.trim() === "") {
     return NextResponse.json(
       {
         error:
-          "GEMINI_API_KEY belum dikonfigurasi. Silakan baca panduan setup di README.",
+          "Konfigurasi GEMINI_API_KEY belum diatur di server (.env.local). Silakan tambahkan API key terlebih dahulu.",
       },
       { status: 500 }
     );
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     body = await req.json();
   } catch {
     return NextResponse.json(
-      { error: "Format request tidak valid." },
+      { error: "Format data request tidak valid. Silakan coba lagi." },
       { status: 400 }
     );
   }
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
 
   if (!jenjang || !ipk || !minat || !lokasi) {
     return NextResponse.json(
-      { error: "Data form tidak lengkap." },
+      { error: "Mohon lengkapi semua data formulir terlebih dahulu." },
       { status: 400 }
     );
   }
@@ -75,7 +75,7 @@ Berdasarkan profil mahasiswa Indonesia berikut:
 - Target lokasi beasiswa: ${lokasi}
 
 Tugasmu:
-Rekomendasikan 3 beasiswa paling sesuai dengan profil di atas. Prioritaskan beasiswa yang NYATA dan aktif (seperti MEXT, GKS, LPDP, Fulbright, Chevening, dll).
+Rekomendasikan 3 beasiswa paling sesuai dengan profil di atas. Prioritaskan beasiswa yang NYATA dan aktif (seperti MEXT, GKS, LPDP, Fulbright, Chevening, AAS, DAAD, dll).
 
 PENTING: Balasnya HANYA dengan JSON array yang valid, tanpa markdown, tanpa penjelasan apapun di luar JSON. Format setiap item adalah:
 {
@@ -93,42 +93,72 @@ PENTING: Balasnya HANYA dengan JSON array yang valid, tanpa markdown, tanpa penj
 Urutkan dari matchPercent tertinggi ke terendah. Berikan 3 item.
 `;
 
-  // 4. Call Gemini API
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
+  // 4. Call Gemini API with model fallbacks
+  const modelsToTry = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
+  const genAI = new GoogleGenerativeAI(apiKey);
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+  let lastError: unknown = null;
 
-    // 5. Parse JSON from response
-    // Strip potential markdown code fences
-    const cleaned = text
-      .replace(/```json\s*/gi, "")
-      .replace(/```\s*/g, "")
-      .trim();
-
-    let scholarships: ScholarshipResult[];
+  for (const modelName of modelsToTry) {
     try {
-      scholarships = JSON.parse(cleaned);
-    } catch {
-      console.error("Failed to parse Gemini response as JSON:", text);
-      return NextResponse.json(
-        {
-          error:
-            "AI mengembalikan format yang tidak terduga. Silakan coba lagi.",
-        },
-        { status: 502 }
-      );
-    }
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
 
-    return NextResponse.json(scholarships);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Gemini API error:", message);
-    return NextResponse.json(
-      { error: `Gagal menghubungi Gemini API: ${message}` },
-      { status: 502 }
-    );
+      const cleaned = text
+        .replace(/```json\s*/gi, "")
+        .replace(/```\s*/g, "")
+        .trim();
+
+      const scholarships: ScholarshipResult[] = JSON.parse(cleaned);
+      return NextResponse.json(scholarships);
+    } catch (err: unknown) {
+      console.warn(`Model ${modelName} failed:`, err);
+      lastError = err;
+
+      if (err instanceof SyntaxError) {
+        return NextResponse.json(
+          {
+            error:
+              "Format tanggapan AI mengalami kendala. Silakan coba beberapa saat lagi.",
+          },
+          { status: 502 }
+        );
+      }
+    }
   }
+
+  // If all model attempts failed, analyze the last error to return a user-friendly message
+  const errStr = lastError instanceof Error ? lastError.message : String(lastError);
+  console.error("Gemini API error summary:", errStr);
+
+  let userFriendlyMessage =
+    "Maaf, terjadi kendala saat menghubungkan ke layanan AI. Silakan coba lagi nanti.";
+
+  if (
+    errStr.includes("API_KEY_INVALID") ||
+    errStr.includes("API key not valid") ||
+    (errStr.includes("400") && errStr.toLowerCase().includes("key"))
+  ) {
+    userFriendlyMessage =
+      "Kunci API (GEMINI_API_KEY) tidak valid. Mohon periksa kembali API Key di file .env.local Anda.";
+  } else if (
+    errStr.includes("503") ||
+    errStr.includes("Service Unavailable") ||
+    errStr.includes("high demand") ||
+    errStr.includes("429") ||
+    errStr.includes("Quota")
+  ) {
+    userFriendlyMessage =
+      "Layanan AI sedang sibuk atau mengalami peningkatan trafik. Silakan tunggu beberapa saat dan coba tekan tombol cari lagi.";
+  } else if (
+    errStr.includes("fetch failed") ||
+    errStr.includes("ENOTFOUND") ||
+    errStr.includes("ECONNREFUSED")
+  ) {
+    userFriendlyMessage =
+      "Gagal terhubung ke jaringan server AI. Mohon periksa koneksi internet Anda.";
+  }
+
+  return NextResponse.json({ error: userFriendlyMessage }, { status: 502 });
 }
