@@ -93,8 +93,8 @@ PENTING: Balasnya HANYA dengan JSON array yang valid, tanpa markdown, tanpa penj
 Urutkan dari matchPercent tertinggi ke terendah. Berikan 3 item.
 `;
 
-  // 4. Call Gemini API with model fallbacks
-  const modelsToTry = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
+  // 4. Call Gemini API with model fallbacks (gemini-3.6-flash primary)
+  const modelsToTry = ["gemini-3.6-flash", "gemini-1.5-flash", "gemini-2.0-flash"];
   const genAI = new GoogleGenerativeAI(apiKey);
 
   let lastError: unknown = null;
