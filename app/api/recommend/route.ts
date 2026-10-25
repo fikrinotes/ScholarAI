@@ -75,7 +75,7 @@ Berdasarkan profil mahasiswa Indonesia berikut:
 - Target lokasi beasiswa: ${lokasi}
 
 Tugasmu:
-Rekomendasikan 3 beasiswa paling sesuai dengan profil di atas. Prioritaskan beasiswa yang NYATA dan aktif (seperti MEXT, GKS, LPDP, Fulbright, Chevening, AAS, DAAD, dll).
+Rekomendasikan 3 beasiswa paling sesuai dengan profil di atas. Prioritaskan beasiswa yang NYATA dan aktif (seperti MEXT, GKS, LPDP, Fulbright, Chevening, AAS, DAAD, dll). jangan tampilkan beasiswa yang sudah lewat deadline nya.
 
 PENTING: Balasnya HANYA dengan JSON array yang valid, tanpa markdown, tanpa penjelasan apapun di luar JSON. Format setiap item adalah:
 {

@@ -138,6 +138,7 @@ export default function ScholarshipForm() {
                 htmlFor="ipk"
                 className="block text-sm font-semibold text-slate-700 mb-2"
               >
+
                 IPK Terakhir / Saat Ini
               </label>
               <input

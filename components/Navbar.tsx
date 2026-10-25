@@ -19,19 +19,7 @@ export default function Navbar() {
             <span className="font-bold text-xl text-indigo-950">
               Scholar<span className="text-indigo-600">AI</span>
             </span>
-          </div>
-
-          {/* Nav Links */}
-          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-            <a href="#" className="text-indigo-600 font-semibold">
-              Cari Beasiswa
-            </a>
-            <a href="#" className="hover:text-indigo-600 transition-colors">
-              Daftar Beasiswa
-            </a>
-            <a href="#" className="hover:text-indigo-600 transition-colors">
-              Tentang Kami
-            </a>
+            <hr />
           </div>
         </div>
       </div>
